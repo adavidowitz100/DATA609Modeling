@@ -1,0 +1,132 @@
+---
+title: "Data 609 - HW6"
+author: "Avery Davidowitz"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+## Import
+```{r}
+library(mltools)
+library(factoextra)
+library(class)
+library(cluster)
+```
+
+
+## EX 1
+
+Use a data set such as the PlantGrowth in R to calculate three different distance metrics and discuss the results.
+
+```{r}
+summary(PlantGrowth)
+head(PlantGrowth)
+```
+Since we have a combination of numeric and categorical data I will first hot encode the data using the mltools package before calculating any distance.
+
+```{r}
+pg_dt <- data.table::as.data.table(PlantGrowth)
+encoded_df <- mltools::one_hot(pg_dt)
+```
+
+The L1 norm (Manhattan distance) for any 2 observations is given by:
+$$D_m(x,y)= \sum_{1}^{D}|x_i-y_i|$$
+This distance is already coded in the base stats function "dist". For example, the manhattan distance between D(2, 21) is:
+```{r}
+man_dist <- dist(rbind(encoded_df[2,], encoded_df[21,]), method="manhattan")
+encoded_df[2,]
+encoded_df[21,]
+man_dist
+```
+
+The L2 norm (Euclidean distance) for any 2 observations is given by:
+$$D_m(x,y)= \sqrt{ \sum_{1}^{D}(x_i-y_i)^2}$$
+This distance is already coded in the base stats function "dist". For example, the euclidean distance between D(11, 23) is:
+```{r}
+euc_dist <- dist(rbind(encoded_df[11,], encoded_df[23,]), method="euclidean")
+encoded_df[11,]
+encoded_df[23,]
+euc_dist
+```
+
+In general any power of the Minkowski distance can be called with the "dist" function. For example:
+
+```{r}
+mink_dist <- dist(rbind(encoded_df[1,], encoded_df[3,]), method = "minkowski", p = 4)
+mink_dist
+```
+Since weight is a continuous variable distance metrics such as edit distance, Jaccard similarity and Hamming distance are of very  limited value.
+
+## EX 2
+Now use a higher dimensional data set mtcars, try the same three distance metrics in the previous question and discuss the results.
+
+```{r}
+head(mtcars)
+```
+Since the data in mtcars is all numeric I don't have to do any encoding. Our distance metrics are much higher compared to the first data set since the max value from PlantGrowth was 6.310 and none of these distances are normalized.
+
+```{r}
+man_dist <- dist(rbind(mtcars[2,], mtcars[21,]), method="manhattan")
+man_dist
+euc_dist <- dist(rbind(mtcars[11,], mtcars[23,]), method="euclidean")
+euc_dist
+mink_dist <- dist(rbind(mtcars[1,], mtcars[3,]), method = "minkowski", p = 4)
+mink_dist
+```
+
+## EX 3
+Use the built-in data set mtcars to carry out hierarchy clustering using two different distance metrics and compare if they get the same results. Discuss the results.
+
+```{r}
+hc_man <- hclust(dist(mtcars, method="manhattan"), method = "ward.D")
+hc_euc <- hclust(dist(mtcars, method="euclidean"), method = "ward.D")
+plot(hc_man)
+plot(hc_euc)
+```
+From the tree diagram it looks like the Manhattan distance split the data set up into fewer distinct groupings. We can use the "cutree" function to split our data set into specific number of groups based on how to tree looks. For the Manhattan I will use k=4 and for Euclidian k=6. We can then compare the distances' clustering.
+
+```{r}
+fviz_dend(hc_man, k=4, rect = TRUE, cex = 0.5)
+fviz_dend(hc_euc, k=6, rect = TRUE, cex = 0.5)
+```
+
+## Ex 4
+Load the well known Fisher's iris flower data set that consists of 150 samples for three species (50 samples each species). The four measures or features are the lengths and widths of sepals and petals. Use the kNN clustering to analyze this iris data set by selecting 120 samples for training and 30 samples for testing.
+
+```{r}
+train_indices <- sample(nrow(iris), 120)
+train_data <- iris[train_indices, 1:4]
+train_labels <- iris[train_indices, 5]
+test_data <- iris[-train_indices, 1:4]
+test_labels <- iris[-train_indices, 5]
+
+k <- 3
+predicted_labels <- knn(train_data, test_data, train_labels, k)
+
+accuracy <- sum(predicted_labels == test_labels) / length(test_labels)
+cat("Accuracy:", round(accuracy, 2))
+```
+## EX 5
+Use the iris data set to carry out k-means clustering. Compare the restults to the actual classes and estimate the clustering accuracy.
+
+```{r}
+k <- 3
+kmeans_results <- kmeans(iris[, 1:4], centers = k, nstart = 20)
+
+table(kmeans_results$cluster, iris[, 5])
+
+actual_classes <- as.numeric(iris[, 5])
+predicted_classes <- kmeans_results$cluster
+num_correct <- sum(actual_classes == predicted_classes)
+accuracy <- num_correct / nrow(iris)
+cat("Clustering Accuracy:", round(accuracy, 2))
+clusplot(iris, kmeans_results$cluster, color=T, shade=T, labels=0, lines=0)
+```
+
+While k means clustering predicts the class of setosa very well it struggles to differentiate between versicolor and virginica which have significant overlap. For this data set kNN performs much better.

@@ -1,0 +1,44 @@
+---
+title: "Data 609 HW 8"
+author: "Avery Davidowitz"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE, warning=FALSE, message=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+set.seed(123)
+```
+
+## Import
+```{r}
+library(nnet)
+```
+
+
+## EX 1
+
+Use the nnet package to analyze the iris data set. Use 80% of the 150 samples as the training data and the rest for validation. Discuss the results.
+
+```{r}
+data(iris)
+
+# Split the data into training and validation sets
+s<-sample(150, 150 * .8, replace = FALSE)
+iris_train<-iris[s,]
+iris_test<-iris[-s,]
+
+# Fit a neural network model to the training data
+ann_model <- nnet(Species ~ ., data = iris_train, size = 5)
+
+# Make predictions on the validation data
+iris_predict <- predict(ann_model, newdata = iris_test, type = "class")
+
+# Calculate the accuracy of the model on the validation data
+table(iris_predict, iris_test[,5])
+mean(iris_predict== iris_test[,5])
+```
+
+The artificial neural network performs very well in predicting the species on the test set with 93% accuracy. It performs similiarly to the support vector machine solution from HW 7.

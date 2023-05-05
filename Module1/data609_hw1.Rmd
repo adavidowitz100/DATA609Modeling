@@ -1,0 +1,116 @@
+---
+title: "Data 609 - HW 1"
+author: "Avery Davidowitz"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+```
+
+## Ex. 1
+Find the minimum of:
+$f(x,y) = x^2 +2xy +y2$ for $(x,y) \in \mathbb{R}^2$
+
+
+Solution:
+
+
+To find the global minimum for an unconstrained differentiable function, we need to
+use first order derivatives to find the critical points and second order derivatives to
+determine the type of point. For this multivariate function the partials are:
+
+
+$\frac{\partial f}{\partial x} = 2x +2y \text{ and } \frac{\partial f}{\partial y} = 2y +2x$
+
+
+Setting both partials equal to 0 yields two equivalent conditions:
+
+
+$\frac{\partial f}{\partial x} = 2x +2y=0 = \frac{\partial f}{\partial y} = 2y +2x =0 \iff y=-x$
+
+
+Substituting $y=-x$ we see the critical points are given by $f(x,y)=x^2 -2x^2 +x^2=0$
+
+
+Therefore, the global minimum value is $f(x,y)=0$ and occurs at all points on the line where $y = -x$. The critical points
+must be minimums because the $\lim_{x,y\to \infty} f(x,y)=\lim_{x,y\to -\infty} f(x,y) = \infty$ and therefore has no maximum. More formally, we can compute the Hessian matrix for $f(x,y)$ to determine the type of critical points.
+
+
+$$H = \left[
+\begin{array}{cc}
+\frac{\partial ^2f}{\partial x^2} & \frac{\partial ^2f}{\partial x \partial y}\\
+\frac{\partial ^2f}{\partial y \partial x} & \frac{\partial ^2f}{\partial y^2}\\
+\end{array} 
+\right]$$
+
+$$H = \left[
+\begin{array}{cc}
+2 & 1\\
+1 & 2\\
+\end{array} 
+\right]$$
+
+Since the matrix has 2 variables we can use the sign of the determinant to determine definiteness because the determinant is the product of the eigenvalues.
+
+$$
+\det(H) = (2*2) - (1*1)=3
+$$
+
+Since the Hessian is positive definite for $f(x,y) = x^2 +2xy +y2$ we can definitively say the critical points are minimums.  
+
+
+Plotting $f(x,y)$ using R to visualize the global minimum:
+```{r}
+obj_func <- function(x, y){
+(x^2 + (2 * x * y) + y^2)
+}
+x <- y <- seq(-1, 1, length = 30)
+z <- outer(x, y, obj_func)
+persp(x, y, z)
+```
+
+
+
+## Ex. 2
+For $f(x)=x^4$ in $\mathbb{R}$, it has the global minimum at $x=0$.
+Find its new minimum if a constraint $x^2 \ge 1$
+
+We can easily solve this problem graphically. Taking the square root of the constraint inequality we have a line $x \ge 1$. So we are trying to find the minimum along the curve of f(x) on or to the right of the boundary line given by the constraint. Since f(x) is strictly increasing we can see that the minimum occurs on the boundary line $x=1$. Therefore, the constrained minimum occurs at $x=1$ yielding $f(1)=1$
+
+```{r}
+f = function(x){x^4}
+ggplot(data.frame(x=c(0, 2)), aes(x=x)) + 
+  stat_function(fun=f) +
+  geom_vline(xintercept = 1)
+```
+
+
+
+## Ex. 3
+Use a Lagrange multiplier to solve the optimization problem:
+min $f(x,y) = x^2 +2xy +y2$ s.t. $y=x^2-2$
+
+Using the Lagrange method gives us $\nabla f = \lambda \nabla g$ and with $g(x,y) =k$. This yields 3 equations with 3 unknowns.
+
+$$
+f_x = \lambda g_x \implies 2x + 2y = \lambda 2x
+$$
+
+$$
+f_y = \lambda g_y \implies 2y + 2x = \lambda * -1
+$$
+$$
+g(x,y) =k \implies x^2-y =2
+$$
+EQ. 2 gives us $\lambda = -2y -2x$ and substituting this into EQ. 1 gives $2x + 2y = 2x(-2y -2x) \implies y= \frac{-2x^2 -x}{1+2x}$
+
+
+Substituting this y into EQ 3 gives $x^2 + \frac{2x^2 + x}{-2x - 1} = 2$. Solving for x yields, $x= -1, x=  2$
+For $x=-1$ EQ 3 gives $y = -1$. For $x=2$ EQ 3 gives us $y=2$. The critical values are $f(-1, -1)=4$ and $f(2, 2)=16$.
+Since 4 is the smallest of these critical value we know the min of $f(x, y)$ is 4.

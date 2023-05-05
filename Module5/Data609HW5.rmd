@@ -1,0 +1,109 @@
+---
+title: "Data 609 HW 5"
+author: "Avery Davidowitz"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Import
+```{r}
+library(optimr)
+library(tidyverse)
+```
+
+
+## EX 1
+
+Carry out the logistic regression (example 22 on page 94) in R using the data:
+
+```{r}
+df <- data.frame(
+  x = c(.1, .5, 1, 1.5, 2, 2.5),
+  y = c(0, 0, 1, 1, 1, 0)
+)
+
+logit <- function(a, b) {
+  result <- 1 / (1 + exp(-1*(a + b*df$x)))
+  return(result)
+}
+
+log_likelihood <- function(par) {
+  a <- par[1]
+  b <- par[2]
+  sum_l <- sum((df$y * log(logit(a, b))) + ((1 - df$y) * log(1 - logit(a, b))))
+  return(-1 * sum_l)
+}
+
+optimr(par=c(1,1), log_likelihood, control = list(fnscale = -1))
+```
+
+Checking results against base general linear model function
+```{r}
+fit <- glm(y ~ x, data = df, family = "binomial")
+summary(fit)
+```
+
+## EX 2
+
+Using the motor car database(mtcars) of the built-in data sets in R to carry out the basic principal component analysis
+and explain your results.
+
+```{r}
+summary(mtcars)
+pca <- prcomp(mtcars, scale=TRUE)
+pca_var <- pca$sdev^2
+pca_car_percent <- round(pca_var/sum(pca_var)*100, 1)
+summary(pca)
+barplot(pca_car_percent, xlab="Principal Component", ylab="Percent Variation Added")
+pca_data <- data.frame(car=rownames(pca$x), x=pca$x[,1], y=pca$x[,2])
+ggplot(data=pca_data, aes(x=x, y=y, label=car)) +
+  geom_text() +
+  xlab(paste("PC1 - ", pca_car_percent[1],"%")) + 
+  ylab(paste("PC2 - ", pca_car_percent[2],"%")) +
+  theme_bw() +
+  ggtitle("PCA of Car Models")
+```
+Reducing the dimensionality down to 2 principal components for the mtcars data set still captures 84 % of the total
+variability in the data set. After the second each component adds significantly less information. Plotting PCA1 and PCA2 shows that we have one very tight cluster of car models that must be very similar to each other.
+
+## EX 3
+
+Generate a random 4 x 5 matrix and find its singular value decomposition using R.
+
+```{r}
+m <- matrix(sample.int(3, 20, replace=TRUE), nrow = 4, ncol = 5)
+m
+svd_m <- svd(m)
+svd_m$d
+svd_m$u
+svd_m$v
+```
+
+## EX 4
+
+First try to simulate 100 data points for y using:
+
+$$y = 5x_1 +2x_2 + 2x_3 + x_4$$
+where $x_1, x_2$ are uniformly distributed in [1, 2] while $x_3, x_4$ are normally distributed with zero mean and unit
+variance. Then use the principal component analysis(PCA) to analyze the data to find its principal components. Are the results expected from the formula.
+
+```{r}
+x1 <- runif(n = 100, min = 1, max = 2)
+x2 <- runif(n = 100, min = 1, max = 2)
+x3 <- rnorm(n = 100, mean = 0, sd = 1)
+x4 <- rnorm(n = 100, mean = 0, sd = 1)
+y <- (5*x1 + 2*x2 + 2*x3 + x4)
+df <- data.frame(y , x1, x2, x3, x4)
+pca <- prcomp(df, scale=TRUE)
+pca_var <- pca$sdev^2
+pca_y_percent <- round(pca_var/sum(pca_var)*100, 1)
+summary(pca)
+barplot(pca_y_percent, xlab="Principal Component", ylab="Percent Variation Added")
+```
+I'm not sure how to interpret these components. However, it does make sense that the 5th component for y adds no information because it is a linear combination of the Xs. 

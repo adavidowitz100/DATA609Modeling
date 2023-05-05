@@ -1,0 +1,90 @@
+---
+title: "DATA 609 HW 3"
+author: "Avery Davidowitz"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Ex. 1
+Write down Newton's formula for finding the minimum of $f(x) = \frac{3x^4 - 4x^3}{12}$
+Solution:
+Finding the minimum is equivalent to finding the roots for f'(x)=0. 
+Newton's Method can solve this numerically using the iterative step of:
+$$x_{k+1}=x_k - \frac{f'(x_k)}{f''(x_k)} $$
+In our case we have
+$$x_{k+1}=x_k - \frac{x_k^2(x_k -1)}{3x_k^2-2x_k)}  $$
+Implementing this algorithm in R
+```{r}
+dfdx <- function(x) {
+    x^2 * (x - 1)}
+
+df2dx <- function(x) {
+    3 * x^2 - 2 * x}
+
+init <- 3
+tol <- .00001
+
+newton <- function(dfdx, df2dx, init, tol) {
+    x = init
+    while (abs(dfdx(x)) > tol) {
+        x = x - dfdx(x)/df2dx(x)
+        }
+    x
+    }
+
+newton(dfdx, df2dx, init, tol)
+```
+
+
+## Ex. 2
+
+Explore optimize() in R and try to solve the previous problem.
+```{r}
+f <- function (x) (3*x^4 - 4*x^3)/12
+xmin <- optimize(f, c(-10, 10), tol = .00001)
+xmin$minimum
+```
+
+
+## Ex. 3
+Use any optimization algorithm to find the minimum of $f(x,y)= (x-1)^2 +100(y-x^2)^2$ in the domain
+$-10 \le x,y \le 10$. Discuss any issues concerning the optimization process.
+```{r}
+library(GA)
+fxy <- function(x, y)
+{
+  (x - 1)^2 + 100*(y - x^2)^2
+}
+
+x <- y <- seq(-10, 10, by = 0.1)
+f <- outer(x, y, fxy)
+persp3D(x, y, f, col.palette = bl2gr.colors)
+
+GA <- ga(type = "real-valued", 
+         fitness =  function(x) -fxy(x[1], x[2]),
+         lower = c(-10, -10), upper = c(10, 10), 
+         popSize = 100, maxiter = 1000, run = 100, seed = 160)
+summary(GA)
+plot(GA)
+```
+I did not really encounter any issues using the GA package to optimize this problem. I did find it hard to get the solution closer than 3 decimal places even after increasing the maximum iterations and the run parameter (which exits the algorithm after no solution improvement after that many iterations)
+
+## Ex. 4
+Explore the optimr package for R and try to solve the previous problem.
+
+```{r}
+library(optimr)
+fxy2 <- function(par)
+{
+  (par[1] - 1)^2 + 100*(par[2] - par[1]^2)^2
+}
+
+optimr(par=c(.5,.5), fxy2, lower=c(-10,-10), upper=c(10,10), method='L-BFGS-B')
+```
+It is interesting to note how much faster this bounded BFGS method converged to the solution than the genetic algorithm.
